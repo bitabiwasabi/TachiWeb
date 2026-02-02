@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data - TachiOnline</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+        .data-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .data-card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+        
+        .data-card p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+        
+        .data-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .data-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .backup-list {
+            margin-top: 16px;
+        }
+        
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .backup-info {
+            flex: 1;
+        }
+        
+        .backup-name {
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .backup-date {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .backup-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .danger-zone {
+            border-color: var(--error);
+        }
+        
+        .danger-zone h3 {
+            color: var(--error);
+        }
+        
+        .btn-danger {
+            background: var(--error);
+            color: #fff;
+        }
+        
+        .btn-danger:hover {
+            background: #ff2f4a;
+        }
+        
+        .file-drop {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin-top: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .file-drop:hover,
+        .file-drop.dragover {
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+        }
+        
+        .file-drop-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        
+        .file-drop-text {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TACHIONLINE</h1>
+        <div></div>
+    </header>
+
+    <div class="page-header">
+        <a href="/" class="back-link">← Back</a>
+        <span class="page-title">Data Management</span>
+        <div></div>
+    </div>
+
+    <div class="content" style="padding-bottom: 80px;">
+        <!-- Stats -->
+        <div class="data-card">
+            <h3>Overview</h3>
+            <div class="data-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-repos">0</div>
+                    <div class="stat-label">Local Repos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-github">0</div>
+                    <div class="stat-label">GitHub Sources</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-size">0</div>
+                    <div class="stat-label">KB Used</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-tags">0</div>
+                    <div class="stat-label">Total Tags</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Export -->
+        <div class="data-card">
+            <h3>Export Data</h3>
+            <p>Download all your settings, repos, and configurations as a backup file.</p>
+            <div class="data-actions">
+                <button class="btn" id="export-all-btn">
+                    Export All Data
+                </button>
+                <button class="btn btn-secondary" id="export-repos-btn">
+                    Export Repos Only
+                </button>
+            </div>
+        </div>
+        
+        <!-- Import -->
+        <div class="data-card">
+            <h3>Import Data</h3>
+            <p>Restore your data from a backup file or import new repos.</p>
+            
+            <div class="data-actions">
+                <button class="btn" id="import-data-btn">
+                    Import Backup
+                </button>
+                <button class="btn btn-secondary" id="import-repo-btn">
+                    Import .repo File
+                </button>
+            </div>
+            
+            <div class="file-drop" id="file-drop">
+                <div class="file-drop-icon">📁</div>
+                <div class="file-drop-text">Drop files here or click to browse</div>
+            </div>
+        </div>
+        
+        <!-- Cookie/LocalStorage -->
+        <div class="data-card">
+            <h3>Storage Info</h3>
+            <p>Your data is stored in browser cookies. Export regularly to prevent data loss.</p>
+            
+            <div class="backup-list" id="storage-info">
+                <div class="backup-item">
+                    <div class="backup-info">
+                        <div class="backup-name">Cookie Storage</div>
+                        <div class="backup-date" id="cookie-size">Calculating...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Danger Zone -->
+        <div class="data-card danger-zone">
+            <h3>Danger Zone</h3>
+            <p>These actions cannot be undone. Make sure to export your data first.</p>
+            <div class="data-actions">
+                <button class="btn btn-danger" id="clear-repos-btn">
+                    Clear All Repos
+                </button>
+                <button class="btn btn-danger" id="clear-all-btn">
+                    Reset Everything
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <nav>
+        <a href="/" class="nav-item">
+            <div class="nav-icon">📚</div>
+            Sites
+        </a>
+        <a href="/api" class="nav-item">
+            <div class="nav-icon">⚙️</div>
+            API
+        </a>
+        <a href="/settings" class="nav-item">
+            <div class="nav-icon">🔧</div>
+            Settings
+        </a>
+        <a href="/data" class="nav-item active">
+            <div class="nav-icon">💾</div>
+            Data
+        </a>
+    </nav>
+
+    <script src="/js/repo-manager.js"></script>
+    <script>
+        // Update stats
+        function updateStats() {
+            const data = window.repoManager.data;
+            
+            document.getElementById('stat-repos').textContent = data.localRepos?.length || 0;
+            document.getElementById('stat-github').textContent = data.githubRepos?.length || 0;
+            
+            // Calculate size
+            const dataStr = JSON.stringify(data);
+            const sizeKB = Math.round(new Blob([dataStr]).size / 1024 * 10) / 10;
+            document.getElementById('stat-size').textContent = sizeKB;
+            document.getElementById('cookie-size').textContent = `Using ${sizeKB} KB of cookie storage`;
+            
+            // Count tags
+            const allTags = new Set();
+            (data.localRepos || []).forEach(r => {
+                (r.tags || []).forEach(t => allTags.add(t));
+            });
+            document.getElementById('stat-tags').textContent = allTags.size;
+        }
+        
+        // Export all data
+        document.getElementById('export-all-btn').addEventListener('click', () => {
+            const data = window.repoManager.data;
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tachionline-backup-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        // Export repos only
+        document.getElementById('export-repos-btn').addEventListener('click', () => {
+            const repos = window.repoManager.data.localRepos || [];
+            const blob = new Blob([JSON.stringify(repos, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tachionline-repos-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        // Import data
+        document.getElementById('import-data-btn').addEventListener('click', () => {
+            openFileDialog('.json', (content) => {
+                try {
+                    const data = JSON.parse(content);
+                    if (confirm('This will replace all your current data. Continue?')) {
+                        window.repoManager.data = data;
+                        window.repoManager.saveData();
+                        alert('Data imported successfully!');
+                        updateStats();
+                    }
+                } catch (e) {
+                    alert('Invalid backup file');
+                }
+            });
+        });
+        
+        // Import repo
+        document.getElementById('import-repo-btn').addEventListener('click', () => {
+            openFileDialog('.repo,.json', (content) => {
+                try {
+                    const repo = JSON.parse(content);
+                    window.repoManager.addLocalRepo(repo);
+                    alert('Repo imported successfully!');
+                    updateStats();
+                } catch (e) {
+                    alert('Invalid repo file');
+                }
+            });
+        });
+        
+        function openFileDialog(accept, callback) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = accept;
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => callback(ev.target.result);
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+        
+        // Drag and drop
+        const fileDrop = document.getElementById('file-drop');
+        
+        fileDrop.addEventListener('click', () => {
+            openFileDialog('.json,.repo', handleFileContent);
+        });
+        
+        fileDrop.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDrop.classList.add('dragover');
+        });
+        
+        fileDrop.addEventListener('dragleave', () => {
+            fileDrop.classList.remove('dragover');
+        });
+        
+        fileDrop.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDrop.classList.remove('dragover');
+            
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => handleFileContent(ev.target.result);
+                reader.readAsText(file);
+            }
+        });
+        
+        function handleFileContent(content) {
+            try {
+                const data = JSON.parse(content);
+                
+                // Check if it's a full backup or single repo
+                if (data.localRepos || data.githubRepos || data.settings) {
+                    if (confirm('This looks like a full backup. Import all data?')) {
+                        window.repoManager.data = data;
+                        window.repoManager.saveData();
+                        alert('Backup restored!');
+                    }
+                } else if (data.name || data.url || data.injections) {
+                    window.repoManager.addLocalRepo(data);
+                    alert('Repo added!');
+                } else if (Array.isArray(data)) {
+                    data.forEach(r => window.repoManager.addLocalRepo(r));
+                    alert(`${data.length} repos imported!`);
+                }
+                
+                updateStats();
+            } catch (e) {
+                alert('Could not parse file');
+            }
+        }
+        
+        // Clear repos
+        document.getElementById('clear-repos-btn').addEventListener('click', () => {
+            if (confirm('Delete all local repos? This cannot be undone.')) {
+                window.repoManager.data.localRepos = [];
+                window.repoManager.saveData();
+                alert('Repos cleared');
+                updateStats();
+            }
+        });
+        
+        // Reset everything
+        document.getElementById('clear-all-btn').addEventListener('click', () => {
+            if (confirm('DELETE EVERYTHING? This will remove all data and cannot be undone!')) {
+                if (confirm('Are you really sure?')) {
+                    document.cookie = `${window.repoManager.STORAGE_KEY}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+                    location.reload();
+                }
+            }
+        });
+        
+        // Initial load
+        updateStats();
+    </script>
+</body>
+</html>

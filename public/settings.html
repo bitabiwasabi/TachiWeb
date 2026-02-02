@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - TachiOnline</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <style>
+        .settings-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin: 12px;
+            overflow: hidden;
+        }
+        
+        .settings-card-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .settings-card-header h3 {
+            font-size: 14px;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        
+        .settings-card-header p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .settings-card-content {
+            padding: 8px 16px;
+        }
+        
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-info {
+            flex: 1;
+        }
+        
+        .setting-label {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .setting-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        /* Flip mode options */
+        .flip-options {
+            display: flex;
+            gap: 8px;
+            padding: 16px;
+        }
+        
+        .flip-option {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .flip-option:hover {
+            border-color: var(--accent);
+        }
+        
+        .flip-option.active {
+            border-color: var(--accent);
+            background: rgba(0, 220, 100, 0.1);
+        }
+        
+        .flip-option input { display: none; }
+        
+        .flip-option-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .flip-option-label {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .flip-option-desc {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        
+        /* Hotkey button */
+        .hotkey-btn {
+            min-width: 70px;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: monospace;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .hotkey-btn:hover {
+            border-color: var(--accent);
+        }
+        
+        .hotkey-btn.recording {
+            background: var(--accent);
+            color: #000;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Controller */
+        .controller-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .controller-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .controller-icon {
+            font-size: 24px;
+        }
+        
+        .controller-name {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .controller-details {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        .controller-status {
+            font-size: 10px;
+            padding: 4px 8px;
+            background: var(--accent);
+            color: #000;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .no-controller {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        
+        .mapping-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+        }
+        
+        .mapping-label {
+            font-size: 12px;
+        }
+        
+        .mapping-btn {
+            min-width: 100px;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        .mapping-btn.recording {
+            background: var(--accent);
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TACHIONLINE</h1>
+        <div></div>
+    </header>
+
+    <div class="page-header">
+        <a href="/" class="back-link">← Back</a>
+        <span class="page-title">Settings</span>
+        <div></div>
+    </div>
+
+    <div class="content" style="padding-bottom: 80px;">
+        <!-- Flip Mode -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <h3>Page Flip Mode</h3>
+                <p>Choose how pages flip in the book reader</p>
+            </div>
+            <div class="flip-options" id="flip-options">
+                <label class="flip-option" data-mode="corner">
+                    <input type="radio" name="flip-mode" value="corner">
+                    <div class="flip-option-icon">📐</div>
+                    <div class="flip-option-label">Corner</div>
+                    <div class="flip-option-desc">Drag corners</div>
+                </label>
+                <label class="flip-option" data-mode="side">
+                    <input type="radio" name="flip-mode" value="side">
+                    <div class="flip-option-icon">📄</div>
+                    <div class="flip-option-label">Side</div>
+                    <div class="flip-option-desc">Drag edges</div>
+                </label>
+                <label class="flip-option" data-mode="click">
+                    <input type="radio" name="flip-mode" value="click">
+                    <div class="flip-option-icon">👆</div>
+                    <div class="flip-option-label">Click</div>
+                    <div class="flip-option-desc">Tap to flip</div>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Hotkeys -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <h3>Keyboard Shortcuts</h3>
+                <p>Click a button and press a key to change</p>
+            </div>
+            <div class="settings-card-content">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-label">Page Info</div>
+                        <div class="setting-desc">Show current page info</div>
+                    </div>
+                    <button class="hotkey-btn" data-action="pageInfo">Tab</button>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-label">Previous Page</div>
+                        <div class="setting-desc">Go to previous page</div>
+                    </div>
+                    <button class="hotkey-btn" data-action="prevPage">Q</button>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-label">Next Page</div>
+                        <div class="setting-desc">Go to next page</div>
+                    </div>
+                    <button class="hotkey-btn" data-action="nextPage">E</button>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-label">Toggle Info</div>
+                        <div class="setting-desc">Show/hide UI overlay</div>
+                    </div>
+                    <button class="hotkey-btn" data-action="toggleInfo">Space</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Controller -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <h3>Controller Support</h3>
+                <p>Connect a gamepad or Bluetooth controller</p>
+            </div>
+            <div class="settings-card-content">
+                <div id="controller-list">
+                    <div class="no-controller">No controllers detected</div>
+                </div>
+                
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+                    <div style="font-size: 12px; font-weight: 600; margin-bottom: 12px;">Button Mapping</div>
+                    <div class="mapping-row">
+                        <span class="mapping-label">Previous Page</span>
+                        <button class="mapping-btn" data-action="prevPage">L1 / LB</button>
+                    </div>
+                    <div class="mapping-row">
+                        <span class="mapping-label">Next Page</span>
+                        <button class="mapping-btn" data-action="nextPage">R1 / RB</button>
+                    </div>
+                    <div class="mapping-row">
+                        <span class="mapping-label">Toggle Info</span>
+                        <button class="mapping-btn" data-action="toggleInfo">A / Cross</button>
+                    </div>
+                    <div class="mapping-row">
+                        <span class="mapping-label">Page Info</span>
+                        <button class="mapping-btn" data-action="pageInfo">Y / Triangle</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- About -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <h3>About</h3>
+                <p>TachiOnline v1.0.0</p>
+            </div>
+            <div class="settings-card-content">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <div class="setting-label">Version</div>
+                        <div class="setting-desc">Current app version</div>
+                    </div>
+                    <span style="color: var(--text-muted); font-size: 12px;">1.0.0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav>
+        <a href="/" class="nav-item">
+            <div class="nav-icon">📚</div>
+            Sites
+        </a>
+        <a href="/api" class="nav-item">
+            <div class="nav-icon">⚙️</div>
+            API
+        </a>
+        <a href="/settings" class="nav-item active">
+            <div class="nav-icon">🔧</div>
+            Settings
+        </a>
+        <a href="/data" class="nav-item">
+            <div class="nav-icon">💾</div>
+            Data
+        </a>
+    </nav>
+
+    <script src="/js/repo-manager.js"></script>
+    <script>
+        const settings = window.repoManager.getSettings();
+        
+        // Flip Mode
+        const flipOptions = document.querySelectorAll('.flip-option');
+        const currentFlipMode = settings.flipMode || 'corner';
+        
+        flipOptions.forEach(option => {
+            const mode = option.dataset.mode;
+            if (mode === currentFlipMode) {
+                option.classList.add('active');
+                option.querySelector('input').checked = true;
+            }
+            
+            option.addEventListener('click', () => {
+                flipOptions.forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                option.querySelector('input').checked = true;
+                window.repoManager.updateSettings({ flipMode: mode });
+            });
+        });
+        
+        // Hotkeys
+        const hotkeyButtons = document.querySelectorAll('.hotkey-btn');
+        let recordingHotkey = null;
+        
+        const hotkeys = settings.hotkeys || {
+            pageInfo: 'Tab',
+            prevPage: 'KeyQ',
+            nextPage: 'KeyE',
+            toggleInfo: 'Space'
+        };
+        
+        function getKeyDisplay(code) {
+            const map = {
+                'Tab': 'Tab', 'Space': 'Space',
+                'KeyQ': 'Q', 'KeyE': 'E', 'KeyW': 'W', 'KeyA': 'A', 'KeyS': 'S', 'KeyD': 'D',
+                'ArrowLeft': '←', 'ArrowRight': '→', 'ArrowUp': '↑', 'ArrowDown': '↓'
+            };
+            return map[code] || code.replace('Key', '');
+        }
+        
+        hotkeyButtons.forEach(btn => {
+            const action = btn.dataset.action;
+            btn.textContent = getKeyDisplay(hotkeys[action]);
+            
+            btn.addEventListener('click', () => {
+                if (recordingHotkey) recordingHotkey.classList.remove('recording');
+                recordingHotkey = btn;
+                btn.classList.add('recording');
+                btn.textContent = '...';
+            });
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (!recordingHotkey) return;
+            e.preventDefault();
+            
+            const action = recordingHotkey.dataset.action;
+            hotkeys[action] = e.code;
+            window.repoManager.updateSettings({ hotkeys });
+            
+            recordingHotkey.textContent = getKeyDisplay(e.code);
+            recordingHotkey.classList.remove('recording');
+            recordingHotkey = null;
+        });
+        
+        // Controller
+        const controllerList = document.getElementById('controller-list');
+        const mappingButtons = document.querySelectorAll('.mapping-btn');
+        let recordingMapping = null;
+        let pollInterval = null;
+        
+        const controllerMapping = settings.controllerMapping || {
+            prevPage: 4, nextPage: 5, toggleInfo: 0, pageInfo: 3
+        };
+        
+        function getButtonName(i) {
+            const names = {
+                0: 'A / Cross', 1: 'B / Circle', 2: 'X / Square', 3: 'Y / Triangle',
+                4: 'L1 / LB', 5: 'R1 / RB', 6: 'L2 / LT', 7: 'R2 / RT',
+                8: 'Select', 9: 'Start', 12: 'D-Up', 13: 'D-Down', 14: 'D-Left', 15: 'D-Right'
+            };
+            return names[i] || `Button ${i}`;
+        }
+        
+        mappingButtons.forEach(btn => {
+            const action = btn.dataset.action;
+            btn.textContent = getButtonName(controllerMapping[action]);
+            
+            btn.addEventListener('click', () => {
+                if (recordingMapping) recordingMapping.classList.remove('recording');
+                recordingMapping = btn;
+                btn.classList.add('recording');
+                btn.textContent = '...';
+                startPolling();
+            });
+        });
+        
+        function updateControllers() {
+            const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+            const connected = Array.from(gamepads).filter(g => g);
+            
+            if (connected.length === 0) {
+                controllerList.innerHTML = '<div class="no-controller">No controllers detected</div>';
+            } else {
+                controllerList.innerHTML = connected.map(gp => `
+                    <div class="controller-item">
+                        <div class="controller-info">
+                            <span class="controller-icon">🎮</span>
+                            <div>
+                                <div class="controller-name">${gp.id.slice(0, 30)}...</div>
+                                <div class="controller-details">${gp.buttons.length} buttons</div>
+                            </div>
+                        </div>
+                        <span class="controller-status">Connected</span>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        function startPolling() {
+            if (pollInterval) return;
+            let prev = {};
+            
+            pollInterval = setInterval(() => {
+                const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+                for (const gp of gamepads) {
+                    if (!gp) continue;
+                    gp.buttons.forEach((btn, i) => {
+                        const key = `${gp.index}-${i}`;
+                        if (btn.pressed && !prev[key] && recordingMapping) {
+                            const action = recordingMapping.dataset.action;
+                            controllerMapping[action] = i;
+                            window.repoManager.updateSettings({ controllerMapping });
+                            recordingMapping.textContent = getButtonName(i);
+                            recordingMapping.classList.remove('recording');
+                            recordingMapping = null;
+                            stopPolling();
+                        }
+                        prev[key] = btn.pressed;
+                    });
+                }
+            }, 16);
+        }
+        
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+        
+        window.addEventListener('gamepadconnected', updateControllers);
+        window.addEventListener('gamepaddisconnected', updateControllers);
+        updateControllers();
+        setInterval(updateControllers, 1000);
+    </script>
+</body>
+</html>

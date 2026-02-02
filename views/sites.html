@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sites - TachiOnline</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/book-reader.css">
+    <style>
+        .sites-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .github-section {
+            margin-bottom: 2rem;
+        }
+        
+        .github-repos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .github-repo-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-tertiary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        
+        .github-repo-tag button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            font-size: 1rem;
+        }
+        
+        .github-repo-tag button:hover {
+            color: var(--error);
+        }
+        
+        .add-github-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .add-github-form input {
+            flex: 1;
+        }
+        
+        .sites-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        
+        .site-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .site-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+        }
+        
+        .site-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        
+        .site-card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .site-card-source {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+        
+        .site-card-url {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            word-break: break-all;
+            margin-bottom: 0.75rem;
+        }
+        
+        .site-card-badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: var(--bg-primary);
+        }
+        
+        .badge-reader {
+            background: rgba(233, 69, 96, 0.2);
+            color: var(--accent);
+        }
+        
+        .badge-css { color: #3b82f6; }
+        .badge-js { color: #eab308; }
+        .badge-html { color: #22c55e; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+        
+        .refresh-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.25rem;
+            padding: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            color: var(--accent);
+        }
+        
+        .refresh-btn.spinning {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <a href="/" class="back-link">← Back</a>
+            <h1 class="page-title">Sites</h1>
+            <button class="refresh-btn" id="refresh-btn" title="Refresh">🔄</button>
+        </header>
+        
+        <section class="github-section card">
+            <h3>GitHub Repositories</h3>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.5rem;">
+                Add GitHub repos containing .repo files to automatically load sites
+            </p>
+            
+            <div class="github-repos" id="github-repos">
+                <!-- GitHub repos will be listed here -->
+            </div>
+            
+            <form class="add-github-form" id="add-github-form">
+                <input type="text" placeholder="owner/repo or GitHub URL" id="github-url-input">
+                <button type="submit" class="btn">Add</button>
+            </form>
+        </section>
+        
+        <section class="sites-section">
+            <div class="sites-header">
+                <h2>Available Sites</h2>
+                <a href="/api" class="btn btn-secondary">+ Create New</a>
+            </div>
+            
+            <div id="sites-container">
+                <div class="loading">Loading sites...</div>
+            </div>
+        </section>
+    </div>
+    
+    <script src="/js/repo-manager.js"></script>
+    <script src="/js/injection.js"></script>
+    <script src="/js/book-reader.js"></script>
+    <script src="/js/hotkeys.js"></script>
+    <script src="/js/controller.js"></script>
+    <script>
+        // Initialize
+        window.hotkeyManager = new HotkeyManager();
+        window.controllerManager = new ControllerManager();
+        
+        const sitesContainer = document.getElementById('sites-container');
+        const githubReposContainer = document.getElementById('github-repos');
+        
+        // Load and display sites
+        async function loadSites() {
+            sitesContainer.innerHTML = '<div class="loading">Loading sites...</div>';
+            
+            try {
+                // Get local repos
+                const localRepos = window.repoManager.getLocalRepos();
+                
+                // Fetch from GitHub repos
+                const githubRepos = await window.repoManager.fetchGitHubRepos();
+                
+                const allRepos = [
+                    ...localRepos.map(r => ({ ...r, sourceType: 'local' })),
+                    ...githubRepos.map(r => ({ ...r, sourceType: 'github' }))
+                ];
+                
+                renderSites(allRepos);
+            } catch (e) {
+                console.error('Error loading sites:', e);
+                sitesContainer.innerHTML = `<div class="empty-state"><h3>Error loading sites</h3><p>${e.message}</p></div>`;
+            }
+        }
+        
+        function renderSites(repos) {
+            if (repos.length === 0) {
+                sitesContainer.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No sites yet</h3>
+                        <p>Add a GitHub repository above or create a new site configuration</p>
+                        <a href="/api" class="btn" style="margin-top: 1rem;">Create Site</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            sitesContainer.innerHTML = `<div class="sites-grid">${repos.map(renderSiteCard).join('')}</div>`;
+            
+            // Add click handlers
+            sitesContainer.querySelectorAll('.site-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const id = card.dataset.id;
+                    const repo = repos.find(r => r.id === id);
+                    if (repo && repo.url) {
+                        window.bookReader.open(repo, repo.url);
+                    }
+                });
+            });
+        }
+        
+        function renderSiteCard(repo) {
+            const badges = [];
+            
+            if (repo.bookReader?.enabled) {
+                badges.push('<span class="badge badge-reader">Reader</span>');
+            }
+            if (repo.injections?.default?.css || repo.injections?.subdomains?.some(s => s.css)) {
+                badges.push('<span class="badge badge-css">CSS</span>');
+            }
+            if (repo.injections?.default?.js || repo.injections?.subdomains?.some(s => s.js)) {
+                badges.push('<span class="badge badge-js">JS</span>');
+            }
+            if (repo.injections?.default?.html || repo.injections?.subdomains?.some(s => s.html)) {
+                badges.push('<span class="badge badge-html">HTML</span>');
+            }
+            
+            return `
+                <div class="site-card" data-id="${repo.id}">
+                    <div class="site-card-header">
+                        <h3 class="site-card-title">${repo.name || 'Unnamed'}</h3>
+                        <span class="site-card-source">${repo.sourceType === 'github' ? 'GitHub' : 'Local'}</span>
+                    </div>
+                    <p class="site-card-url">${repo.url || 'No URL'}</p>
+                    <div class="site-card-badges">${badges.join('')}</div>
+                </div>
+            `;
+        }
+        
+        // GitHub repos management
+        function renderGitHubRepos() {
+            const repos = window.repoManager.data.githubRepos;
+            
+            if (repos.length === 0) {
+                githubReposContainer.innerHTML = '<p style="color: var(--text-secondary);">No repositories added</p>';
+                return;
+            }
+            
+            githubReposContainer.innerHTML = repos.map(repo => `
+                <div class="github-repo-tag">
+                    <span>${repo.owner}/${repo.name}</span>
+                    <button onclick="removeGitHubRepo('${repo.id}')" title="Remove">×</button>
+                </div>
+            `).join('');
+        }
+        
+        function removeGitHubRepo(id) {
+            window.repoManager.removeGitHubRepo(id);
+            renderGitHubRepos();
+            loadSites();
+        }
+        
+        // Form submission
+        document.getElementById('add-github-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('github-url-input');
+            const url = input.value.trim();
+            
+            if (!url) return;
+            
+            try {
+                window.repoManager.addGitHubRepo(url);
+                input.value = '';
+                renderGitHubRepos();
+                loadSites();
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+        
+        // Refresh button
+        document.getElementById('refresh-btn').addEventListener('click', function() {
+            this.classList.add('spinning');
+            loadSites().finally(() => {
+                this.classList.remove('spinning');
+            });
+        });
+        
+        // Import file handling
+        function handleImport() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.repo';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    try {
+                        await window.repoManager.importRepo(file);
+                        loadSites();
+                    } catch (err) {
+                        alert('Failed to import: ' + err.message);
+                    }
+                }
+            };
+            input.click();
+        }
+        
+        // Initial load
+        renderGitHubRepos();
+        loadSites();
+    </script>
+</body>
+</html>

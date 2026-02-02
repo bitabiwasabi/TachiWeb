@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reader - TachiOnline</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/book-reader.css">
+</head>
+<body style="background: #0a0a0f; overflow: hidden;">
+    <script src="/js/repo-manager.js"></script>
+    <script src="/js/injection.js"></script>
+    <script src="/js/book-reader.js"></script>
+    <script src="/js/hotkeys.js"></script>
+    <script src="/js/controller.js"></script>
+    <script>
+        // Initialize managers
+        window.hotkeyManager = new HotkeyManager();
+        window.controllerManager = new ControllerManager();
+        
+        // Get URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const repoId = params.get('repo');
+        const url = params.get('url');
+        
+        if (repoId || url) {
+            let repo = null;
+            
+            if (repoId) {
+                repo = window.repoManager.getRepoById(repoId);
+            }
+            
+            if (!repo && url) {
+                // Create a basic repo for the URL
+                repo = {
+                    name: 'Direct Link',
+                    url: url,
+                    bookReader: {
+                        enabled: true,
+                        mode: params.get('mode') || 'two-page',
+                        imageSelector: params.get('selector') || 'img'
+                    }
+                };
+            }
+            
+            if (repo) {
+                window.bookReader.open(repo, repo.url || url);
+            }
+        } else {
+            // Redirect to sites if no params
+            window.location.href = '/sites';
+        }
+    </script>
+</body>
+</html>

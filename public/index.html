@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TachiOnline</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/book-reader.css">
+</head>
+<body>
+    <header>
+        <h1>TACHIONLINE</h1>
+        <div class="search-icon" id="search-btn"></div>
+    </header>
+
+    <div class="tabs" id="tabs">
+        <div class="tab active" data-filter="all">All</div>
+        <div class="tab" data-filter="recent">Recent</div>
+        <div class="tab" data-filter="tagged">Tagged</div>
+        <div class="tab" data-filter="manga">Manga</div>
+        <div class="tab" data-filter="manhwa">Manhwa</div>
+    </div>
+
+    <div class="content">
+        <div class="section">
+            <h2>Your Sites</h2>
+            <div class="card-container" id="featured-cards">
+                <!-- 3D cards will be rendered here -->
+                <div class="empty-state" id="empty-featured">
+                    <h3>No sites yet</h3>
+                    <p>Add sites via the API editor</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Recent</h2>
+            <div class="card-row" id="recent-sites">
+                <!-- Recent sites will be rendered here -->
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>By Tag</h2>
+            <div class="card-row" id="tagged-sites">
+                <!-- Tagged sites will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <nav>
+        <a href="/" class="nav-item active">
+            <div class="nav-icon">📚</div>
+            Sites
+        </a>
+        <a href="/api" class="nav-item">
+            <div class="nav-icon">⚙️</div>
+            API
+        </a>
+        <a href="/settings" class="nav-item">
+            <div class="nav-icon">🔧</div>
+            Settings
+        </a>
+        <a href="/data" class="nav-item">
+            <div class="nav-icon">💾</div>
+            Data
+        </a>
+    </nav>
+
+    <!-- Search Modal -->
+    <div class="modal-overlay" id="search-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Search Sites</h3>
+                <button class="modal-close" id="close-search">&times;</button>
+            </div>
+            <input type="text" id="search-input" placeholder="Search by name or tag...">
+            <div id="search-results" class="mt-2"></div>
+        </div>
+    </div>
+
+    <script src="/js/repo-manager.js"></script>
+    <script src="/js/injection.js"></script>
+    <script src="/js/book-reader.js"></script>
+    <script src="/js/hotkeys.js"></script>
+    <script src="/js/controller.js"></script>
+    <script>
+        // Initialize
+        window.hotkeyManager = new HotkeyManager();
+        window.controllerManager = new ControllerManager();
+
+        const featuredCards = document.getElementById('featured-cards');
+        const recentSites = document.getElementById('recent-sites');
+        const taggedSites = document.getElementById('tagged-sites');
+        const emptyFeatured = document.getElementById('empty-featured');
+
+        let allRepos = [];
+        let currentFilter = 'all';
+
+        // Load sites
+        async function loadSites() {
+            try {
+                const localRepos = window.repoManager.getLocalRepos();
+                const githubRepos = await window.repoManager.fetchGitHubRepos();
+                
+                allRepos = [
+                    ...localRepos.map(r => ({ ...r, sourceType: 'local' })),
+                    ...githubRepos.map(r => ({ ...r, sourceType: 'github' }))
+                ];
+
+                renderSites();
+            } catch (e) {
+                console.error('Error loading sites:', e);
+            }
+        }
+
+        function renderSites() {
+            const filtered = filterRepos(allRepos, currentFilter);
+            
+            // Render 3D featured cards (first 3)
+            renderFeaturedCards(filtered.slice(0, 3));
+            
+            // Render recent row
+            renderCardRow(recentSites, filtered.slice(0, 10));
+            
+            // Render tagged row (only with tags)
+            const tagged = allRepos.filter(r => r.tags && r.tags.length > 0);
+            renderCardRow(taggedSites, tagged);
+        }
+
+        function filterRepos(repos, filter) {
+            if (filter === 'all') return repos;
+            if (filter === 'recent') return repos.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+            if (filter === 'tagged') return repos.filter(r => r.tags && r.tags.length > 0);
+            return repos.filter(r => r.tags && r.tags.includes(filter));
+        }
+
+        function renderFeaturedCards(repos) {
+            if (repos.length === 0) {
+                emptyFeatured.style.display = 'block';
+                return;
+            }
+            
+            emptyFeatured.style.display = 'none';
+            
+            const positions = [
+                { left: 70, top: 70, z: 2 },
+                { left: 190, top: 10, z: 1 },
+                { left: 310, top: 50, z: 0 }
+            ];
+            
+            let html = '';
+            repos.forEach((repo, i) => {
+                const pos = positions[i] || positions[0];
+                const tags = (repo.tags || []).map(t => `<span class="tag tag-${t.toLowerCase()}">${t}</span>`).join('');
+                
+                html += `
+                    <div class="site-card-3d" style="left: ${pos.left}px; top: ${pos.top}px; z-index: ${pos.z};" data-id="${repo.id}">
+                        <div class="card-thumb">${getRepoIcon(repo)}</div>
+                        <div class="card-info">
+                            <div class="card-title">${repo.name || 'Unnamed'}</div>
+                            <div class="card-author">${repo.sourceType}</div>
+                            <div class="tag-container">${tags}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            featuredCards.innerHTML = html + emptyFeatured.outerHTML;
+            
+            // Add click handlers
+            featuredCards.querySelectorAll('.site-card-3d').forEach(card => {
+                card.addEventListener('click', () => openSite(card.dataset.id));
+            });
+        }
+
+        function renderCardRow(container, repos) {
+            if (repos.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>No sites</p></div>';
+                return;
+            }
+            
+            container.innerHTML = repos.map(repo => {
+                const tags = (repo.tags || []).slice(0, 2).map(t => 
+                    `<span class="tag tag-${t.toLowerCase()}">${t}</span>`
+                ).join('');
+                
+                return `
+                    <div class="site-card" data-id="${repo.id}">
+                        <div class="card-thumb">${getRepoIcon(repo)}</div>
+                        <div class="card-title">${repo.name || 'Unnamed'}</div>
+                        <div class="card-author">${repo.sourceType}</div>
+                        <div class="tag-container">${tags}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.querySelectorAll('.site-card').forEach(card => {
+                card.addEventListener('click', () => openSite(card.dataset.id));
+            });
+        }
+
+        function getRepoIcon(repo) {
+            if (repo.bookReader?.enabled) return '📖';
+            if (repo.injections?.default?.css) return '🎨';
+            if (repo.injections?.default?.js) return '⚡';
+            return '🌐';
+        }
+
+        function openSite(id) {
+            const repo = allRepos.find(r => r.id === id);
+            if (repo && repo.url) {
+                window.bookReader.open(repo, repo.url);
+            }
+        }
+
+        // Tab filtering
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.filter;
+                renderSites();
+            });
+        });
+
+        // Search
+        document.getElementById('search-btn').addEventListener('click', () => {
+            document.getElementById('search-modal').classList.add('active');
+            document.getElementById('search-input').focus();
+        });
+
+        document.getElementById('close-search').addEventListener('click', () => {
+            document.getElementById('search-modal').classList.remove('active');
+        });
+
+        document.getElementById('search-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'search-modal') {
+                document.getElementById('search-modal').classList.remove('active');
+            }
+        });
+
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const results = allRepos.filter(r => 
+                r.name?.toLowerCase().includes(query) ||
+                r.tags?.some(t => t.toLowerCase().includes(query))
+            );
+            
+            const resultsContainer = document.getElementById('search-results');
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+            
+            resultsContainer.innerHTML = results.slice(0, 5).map(r => `
+                <div class="card" style="cursor: pointer;" onclick="openSite('${r.id}'); document.getElementById('search-modal').classList.remove('active');">
+                    <strong>${r.name || 'Unnamed'}</strong>
+                    <div style="font-size: 12px; color: var(--text-muted);">${r.url || 'No URL'}</div>
+                </div>
+            `).join('');
+        });
+
+        // Initial load
+        loadSites();
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "tachionline",
+  "version": "1.0.0",
+  "description": "Book reader with injection system and page flip animations",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "vercel-build": "echo 'No build step required'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

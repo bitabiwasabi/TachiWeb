@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Editor - TachiOnline</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/book-reader.css">
+    <style>
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+        }
+        
+        @media (min-width: 768px) {
+            .editor-container {
+                flex-direction: row;
+                height: calc(100vh - 180px);
+            }
+            .editor-panel {
+                flex: 1;
+                overflow-y: auto;
+            }
+        }
+        
+        .editor-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .panel-content {
+            padding: 16px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        @media (min-width: 768px) {
+            .panel-content {
+                max-height: none;
+                height: calc(100% - 50px);
+            }
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .input-row input {
+            flex: 1;
+        }
+        
+        .injection-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .injection-tab {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .injection-tab:hover {
+            color: var(--text-primary);
+        }
+        
+        .injection-tab.active {
+            background: var(--accent);
+            color: #000;
+            font-weight: 600;
+        }
+        
+        .injection-content {
+            display: none;
+        }
+        
+        .injection-content.active {
+            display: block;
+        }
+        
+        .injection-textarea {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            min-height: 150px;
+        }
+        
+        /* Tags */
+        .tags-section {
+            margin-bottom: 16px;
+        }
+        
+        .tags-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .tag-option {
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tag-option:hover {
+            border-color: var(--accent);
+        }
+        
+        .tag-option.selected {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+        }
+        
+        .tag-option.tag-18.selected { background: #ff4757; border-color: #ff4757; color: #fff; }
+        .tag-option.tag-raw.selected { background: #ffa502; border-color: #ffa502; color: #000; }
+        .tag-option.tag-en.selected { background: #00dc64; border-color: #00dc64; color: #000; }
+        
+        /* Subdomain items */
+        .subdomain-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .subdomain-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .subdomain-header input {
+            flex: 1;
+        }
+        
+        .subdomain-delete {
+            width: 36px;
+            height: 36px;
+            background: var(--error);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        .subdomain-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .subdomain-tab {
+            padding: 4px 10px;
+            background: var(--bg-tertiary);
+            border: none;
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        .subdomain-tab.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        
+        .subdomain-content {
+            display: none;
+        }
+        
+        .subdomain-content.active {
+            display: block;
+        }
+        
+        .subdomain-textarea {
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            min-height: 80px;
+        }
+        
+        /* Reader settings */
+        .reader-settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .reader-settings .full-width {
+            grid-column: span 2;
+        }
+        
+        /* Preview */
+        .preview-frame {
+            width: 100%;
+            height: 300px;
+            border: none;
+            border-radius: 12px;
+            background: #fff;
+        }
+        
+        @media (min-width: 768px) {
+            .preview-frame {
+                height: 100%;
+            }
+        }
+        
+        /* Actions */
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border);
+        }
+        
+        .editor-actions .btn {
+            flex: 1;
+        }
+        
+        /* Toggle in settings */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TACHIONLINE</h1>
+        <div></div>
+    </header>
+
+    <div class="page-header">
+        <a href="/" class="back-link">← Back</a>
+        <span class="page-title">Repo Editor</span>
+        <div></div>
+    </div>
+
+    <div class="content" style="padding-bottom: 80px;">
+        <div class="editor-container">
+            <!-- Config Panel -->
+            <div class="editor-panel">
+                <div class="panel-header">Configuration</div>
+                <div class="panel-content">
+                    <!-- Name & URL -->
+                    <div class="input-group">
+                        <label>Site Name</label>
+                        <input type="text" id="repo-name" placeholder="My Site">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Target URL</label>
+                        <div class="input-row">
+                            <input type="url" id="site-url" placeholder="https://example.com">
+                            <button class="btn" id="load-preview-btn">Load</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Tags -->
+                    <div class="tags-section">
+                        <label>Tags</label>
+                        <div class="tags-list" id="tags-list">
+                            <div class="tag-option tag-en" data-tag="EN">English</div>
+                            <div class="tag-option tag-kr" data-tag="KR">Korean</div>
+                            <div class="tag-option tag-jp" data-tag="JP">Japanese</div>
+                            <div class="tag-option tag-cn" data-tag="CN">Chinese</div>
+                            <div class="tag-option tag-raw" data-tag="Raw">Raw</div>
+                            <div class="tag-option tag-18" data-tag="18+">18+</div>
+                            <div class="tag-option" data-tag="Manga">Manga</div>
+                            <div class="tag-option" data-tag="Manhwa">Manhwa</div>
+                            <div class="tag-option" data-tag="Manhua">Manhua</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Default Injections -->
+                    <div class="card">
+                        <h3 class="mb-1">Default Injections</h3>
+                        <div class="injection-tabs">
+                            <button class="injection-tab active" data-tab="css">CSS</button>
+                            <button class="injection-tab" data-tab="html">HTML</button>
+                            <button class="injection-tab" data-tab="js">JS</button>
+                        </div>
+                        
+                        <div class="injection-content active" data-content="css">
+                            <textarea class="injection-textarea" id="default-css" placeholder="/* Custom CSS */"></textarea>
+                        </div>
+                        <div class="injection-content" data-content="html">
+                            <textarea class="injection-textarea" id="default-html" placeholder="<!-- Custom HTML -->"></textarea>
+                        </div>
+                        <div class="injection-content" data-content="js">
+                            <textarea class="injection-textarea" id="default-js" placeholder="// Custom JavaScript"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Subdomain Patterns -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>URL Patterns</h3>
+                            <button class="btn btn-icon" id="add-subdomain-btn">+</button>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
+                            Use regex like <code>chapter|ch|read</code> to match URL paths
+                        </p>
+                        <div id="subdomain-list"></div>
+                    </div>
+                    
+                    <!-- Book Reader -->
+                    <div class="card">
+                        <h3 class="mb-1">Book Reader (Default)</h3>
+                        <div class="setting-row">
+                            <span>Enable Reader</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="reader-enabled">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div id="reader-options" class="hidden">
+                            <div class="reader-settings mt-2">
+                                <div class="input-group">
+                                    <label>Mode</label>
+                                    <select id="reader-mode">
+                                        <option value="two-page">Two Page</option>
+                                        <option value="single">Single Page</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>Image Selector</label>
+                                    <input type="text" id="image-selector" placeholder="img.page">
+                                </div>
+                                <div class="input-group">
+                                    <label>Next Page</label>
+                                    <input type="text" id="next-page-selector" placeholder=".next-btn">
+                                </div>
+                                <div class="input-group">
+                                    <label>Prev Page</label>
+                                    <input type="text" id="prev-page-selector" placeholder=".prev-btn">
+                                </div>
+                                <div class="input-group full-width">
+                                    <label>URL Pattern</label>
+                                    <input type="text" id="url-pattern" placeholder="/chapter-(\d+)/">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="editor-actions">
+                    <button class="btn btn-secondary" id="import-btn">Import</button>
+                    <button class="btn" id="save-btn">Save .repo</button>
+                </div>
+            </div>
+            
+            <!-- Preview Panel -->
+            <div class="editor-panel">
+                <div class="panel-header" style="display: flex; justify-content: space-between;">
+                    <span>Preview</span>
+                    <select id="preview-subdomain" style="background: var(--bg-card); border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; color: var(--text-primary);">
+                        <option value="">Default</option>
+                    </select>
+                </div>
+                <div class="panel-content" style="padding: 0; height: calc(100% - 50px);">
+                    <iframe class="preview-frame" id="preview-frame"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav>
+        <a href="/" class="nav-item">
+            <div class="nav-icon">📚</div>
+            Sites
+        </a>
+        <a href="/api" class="nav-item active">
+            <div class="nav-icon">⚙️</div>
+            API
+        </a>
+        <a href="/settings" class="nav-item">
+            <div class="nav-icon">🔧</div>
+            Settings
+        </a>
+        <a href="/data" class="nav-item">
+            <div class="nav-icon">💾</div>
+            Data
+        </a>
+    </nav>
+
+    <script src="/js/repo-manager.js"></script>
+    <script src="/js/injection.js"></script>
+    <script>
+        let subdomainCount = 0;
+        let selectedTags = [];
+
+        // DOM Elements
+        const repoNameInput = document.getElementById('repo-name');
+        const siteUrlInput = document.getElementById('site-url');
+        const defaultCssInput = document.getElementById('default-css');
+        const defaultHtmlInput = document.getElementById('default-html');
+        const defaultJsInput = document.getElementById('default-js');
+        const previewFrame = document.getElementById('preview-frame');
+        const subdomainList = document.getElementById('subdomain-list');
+        const previewSubdomain = document.getElementById('preview-subdomain');
+        const readerEnabled = document.getElementById('reader-enabled');
+        const readerOptions = document.getElementById('reader-options');
+
+        // Tags
+        document.querySelectorAll('.tag-option').forEach(tag => {
+            tag.addEventListener('click', () => {
+                tag.classList.toggle('selected');
+                const tagValue = tag.dataset.tag;
+                if (tag.classList.contains('selected')) {
+                    if (!selectedTags.includes(tagValue)) selectedTags.push(tagValue);
+                } else {
+                    selectedTags = selectedTags.filter(t => t !== tagValue);
+                }
+            });
+        });
+
+        // Injection tabs
+        document.querySelectorAll('.injection-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('.injection-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.injection-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelector(`.injection-content[data-content="${tabName}"]`).classList.add('active');
+            });
+        });
+
+        // Reader toggle
+        readerEnabled.addEventListener('change', () => {
+            readerOptions.classList.toggle('hidden', !readerEnabled.checked);
+        });
+
+        // Add subdomain
+        document.getElementById('add-subdomain-btn').addEventListener('click', () => addSubdomainItem());
+
+        function addSubdomainItem(data = {}) {
+            const id = subdomainCount++;
+            const readerOn = data.bookReader?.enabled || false;
+            
+            const item = document.createElement('div');
+            item.className = 'subdomain-item';
+            item.dataset.id = id;
+            item.innerHTML = `
+                <div class="subdomain-header">
+                    <input type="text" class="subdomain-pattern" placeholder="chapter|ch|read" value="${data.pattern || ''}">
+                    <button class="subdomain-delete" onclick="removeSubdomain(${id})">×</button>
+                </div>
+                <div class="subdomain-tabs">
+                    <button class="subdomain-tab active" data-tab="css">CSS</button>
+                    <button class="subdomain-tab" data-tab="html">HTML</button>
+                    <button class="subdomain-tab" data-tab="js">JS</button>
+                    <button class="subdomain-tab" data-tab="reader">Reader</button>
+                </div>
+                <div class="subdomain-content active" data-content="css">
+                    <textarea class="subdomain-textarea sub-css" placeholder="/* CSS */">${data.css || ''}</textarea>
+                </div>
+                <div class="subdomain-content" data-content="html">
+                    <textarea class="subdomain-textarea sub-html" placeholder="<!-- HTML -->">${data.html || ''}</textarea>
+                </div>
+                <div class="subdomain-content" data-content="js">
+                    <textarea class="subdomain-textarea sub-js" placeholder="// JS">${data.js || ''}</textarea>
+                </div>
+                <div class="subdomain-content" data-content="reader">
+                    <div class="setting-row">
+                        <span style="font-size: 12px;">Enable Reader</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" class="sub-reader-enabled" ${readerOn ? 'checked' : ''}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="sub-reader-options ${readerOn ? '' : 'hidden'}">
+                        <div class="reader-settings mt-1">
+                            <div class="input-group">
+                                <label style="font-size: 10px;">Mode</label>
+                                <select class="sub-reader-mode" style="padding: 8px;">
+                                    <option value="two-page" ${data.bookReader?.mode === 'two-page' ? 'selected' : ''}>Two Page</option>
+                                    <option value="single" ${data.bookReader?.mode === 'single' ? 'selected' : ''}>Single</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 10px;">Image Selector</label>
+                                <input type="text" class="sub-image-selector" placeholder="img" value="${data.bookReader?.imageSelector || ''}" style="padding: 8px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Tab switching
+            item.querySelectorAll('.subdomain-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    item.querySelectorAll('.subdomain-tab').forEach(t => t.classList.remove('active'));
+                    item.querySelectorAll('.subdomain-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    item.querySelector(`.subdomain-content[data-content="${tab.dataset.tab}"]`).classList.add('active');
+                });
+            });
+            
+            // Reader toggle
+            const readerToggle = item.querySelector('.sub-reader-enabled');
+            const readerOpts = item.querySelector('.sub-reader-options');
+            readerToggle.addEventListener('change', () => {
+                readerOpts.classList.toggle('hidden', !readerToggle.checked);
+            });
+            
+            subdomainList.appendChild(item);
+            updatePreviewOptions();
+        }
+
+        function removeSubdomain(id) {
+            const item = subdomainList.querySelector(`.subdomain-item[data-id="${id}"]`);
+            if (item) item.remove();
+            updatePreviewOptions();
+        }
+
+        function updatePreviewOptions() {
+            const items = subdomainList.querySelectorAll('.subdomain-item');
+            previewSubdomain.innerHTML = '<option value="">Default</option>';
+            items.forEach((item, i) => {
+                const pattern = item.querySelector('.subdomain-pattern').value || `Pattern ${i + 1}`;
+                const opt = document.createElement('option');
+                opt.value = item.dataset.id;
+                opt.textContent = pattern;
+                previewSubdomain.appendChild(opt);
+            });
+        }
+
+        // Load preview
+        document.getElementById('load-preview-btn').addEventListener('click', async () => {
+            const url = siteUrlInput.value.trim();
+            if (!url) return alert('Enter a URL');
+            previewFrame.src = `/proxy?url=${encodeURIComponent(url)}`;
+        });
+
+        // Collect data
+        function collectRepoData() {
+            const subdomains = [];
+            subdomainList.querySelectorAll('.subdomain-item').forEach(item => {
+                subdomains.push({
+                    pattern: item.querySelector('.subdomain-pattern').value,
+                    regex: true,
+                    css: item.querySelector('.sub-css').value,
+                    html: item.querySelector('.sub-html').value,
+                    js: item.querySelector('.sub-js').value,
+                    bookReader: {
+                        enabled: item.querySelector('.sub-reader-enabled')?.checked || false,
+                        mode: item.querySelector('.sub-reader-mode')?.value || 'two-page',
+                        imageSelector: item.querySelector('.sub-image-selector')?.value || ''
+                    }
+                });
+            });
+            
+            return {
+                name: repoNameInput.value || 'Unnamed',
+                url: siteUrlInput.value,
+                tags: selectedTags,
+                injections: {
+                    default: {
+                        css: defaultCssInput.value,
+                        html: defaultHtmlInput.value,
+                        js: defaultJsInput.value
+                    },
+                    subdomains
+                },
+                bookReader: {
+                    enabled: readerEnabled.checked,
+                    mode: document.getElementById('reader-mode').value,
+                    imageSelector: document.getElementById('image-selector').value,
+                    nextPageSelector: document.getElementById('next-page-selector').value,
+                    prevPageSelector: document.getElementById('prev-page-selector').value,
+                    urlPattern: document.getElementById('url-pattern').value
+                }
+            };
+        }
+
+        // Save
+        document.getElementById('save-btn').addEventListener('click', () => {
+            const repo = collectRepoData();
+            window.repoManager.exportRepo(repo);
+        });
+
+        // Import
+        document.getElementById('import-btn').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.repo';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            loadRepoData(JSON.parse(ev.target.result));
+                        } catch (err) {
+                            alert('Invalid file');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        });
+
+        function loadRepoData(data) {
+            repoNameInput.value = data.name || '';
+            siteUrlInput.value = data.url || '';
+            
+            // Tags
+            selectedTags = data.tags || [];
+            document.querySelectorAll('.tag-option').forEach(tag => {
+                tag.classList.toggle('selected', selectedTags.includes(tag.dataset.tag));
+            });
+            
+            defaultCssInput.value = data.injections?.default?.css || '';
+            defaultHtmlInput.value = data.injections?.default?.html || '';
+            defaultJsInput.value = data.injections?.default?.js || '';
+            
+            subdomainList.innerHTML = '';
+            subdomainCount = 0;
+            (data.injections?.subdomains || []).forEach(sub => addSubdomainItem(sub));
+            
+            readerEnabled.checked = data.bookReader?.enabled || false;
+            readerOptions.classList.toggle('hidden', !readerEnabled.checked);
+            document.getElementById('reader-mode').value = data.bookReader?.mode || 'two-page';
+            document.getElementById('image-selector').value = data.bookReader?.imageSelector || '';
+            document.getElementById('next-page-selector').value = data.bookReader?.nextPageSelector || '';
+            document.getElementById('prev-page-selector').value = data.bookReader?.prevPageSelector || '';
+            document.getElementById('url-pattern').value = data.bookReader?.urlPattern || '';
+        }
+    </script>
+</body>
+</html>

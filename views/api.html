@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Editor - TachiOnline</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/editor.css">
+    <link rel="stylesheet" href="/css/book-reader.css">
+</head>
+<body>
+    <div class="container" style="max-width: 100%; padding: 1rem;">
+        <header class="page-header">
+            <a href="/" class="back-link">← Back</a>
+            <h1 class="page-title">Repo Editor</h1>
+            <div class="flex gap-1">
+                <button class="btn btn-secondary" id="import-btn">Import</button>
+                <button class="btn" id="save-btn">Save .repo</button>
+            </div>
+        </header>
+        
+        <div class="editor-container">
+            <!-- Editor Panel -->
+            <div class="editor-panel">
+                <div class="editor-panel-header">
+                    <span class="editor-panel-title">Configuration</span>
+                </div>
+                <div class="editor-panel-content">
+                    <!-- Name & URL -->
+                    <div class="url-section">
+                        <div class="mb-2">
+                            <label for="repo-name">Name</label>
+                            <input type="text" id="repo-name" placeholder="Site name">
+                        </div>
+                        <label for="site-url">Target URL</label>
+                        <div class="url-input-group">
+                            <input type="url" id="site-url" placeholder="https://example.com">
+                            <button class="btn" id="load-preview-btn">Load</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Default Injections -->
+                    <div class="card">
+                        <h4 style="margin-bottom: 1rem;">Default Injections</h4>
+                        <div class="injection-tabs">
+                            <button class="injection-tab active" data-tab="css">CSS</button>
+                            <button class="injection-tab" data-tab="html">HTML</button>
+                            <button class="injection-tab" data-tab="js">JavaScript</button>
+                        </div>
+                        
+                        <div class="injection-content active" data-content="css">
+                            <textarea class="injection-textarea" id="default-css" placeholder="/* Custom CSS */"></textarea>
+                        </div>
+                        <div class="injection-content" data-content="html">
+                            <textarea class="injection-textarea" id="default-html" placeholder="<!-- Custom HTML -->"></textarea>
+                        </div>
+                        <div class="injection-content" data-content="js">
+                            <textarea class="injection-textarea" id="default-js" placeholder="// Custom JavaScript"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Subdomain Injections -->
+                    <div class="subdomain-section">
+                        <div class="subdomain-header">
+                            <h4>Subdomain Patterns</h4>
+                            <button class="btn btn-icon" id="add-subdomain-btn" title="Add pattern">+</button>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">
+                            Use regex patterns like <code>chapter|ch|chap</code> to match URL paths
+                        </p>
+                        <div class="subdomain-list" id="subdomain-list">
+                            <!-- Subdomain items will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Book Reader Settings -->
+                    <div class="book-reader-settings">
+                        <h4 style="margin-bottom: 1rem;">Book Reader</h4>
+                        
+                        <div class="setting-item mb-2">
+                            <label>Enable Book Reader</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="reader-enabled">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div id="reader-options" class="hidden">
+                            <div class="settings-grid">
+                                <div class="setting-item">
+                                    <label for="reader-mode">Mode</label>
+                                    <select id="reader-mode">
+                                        <option value="two-page">Two Page</option>
+                                        <option value="single">Single Page</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label for="image-selector">Image Selector</label>
+                                    <input type="text" id="image-selector" placeholder="img.page">
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label for="next-page-selector">Next Page Selector</label>
+                                    <input type="text" id="next-page-selector" placeholder=".next-btn">
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <label for="prev-page-selector">Prev Page Selector</label>
+                                    <input type="text" id="prev-page-selector" placeholder=".prev-btn">
+                                </div>
+                                
+                                <div class="setting-item" style="grid-column: span 2;">
+                                    <label for="url-pattern">URL Pattern (for page navigation)</label>
+                                    <input type="text" id="url-pattern" placeholder="/chapter-(\d+)/">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Preview Panel -->
+            <div class="editor-panel preview-panel">
+                <div class="editor-panel-header">
+                    <span class="editor-panel-title">Preview</span>
+                    <select id="preview-subdomain" style="width: auto;">
+                        <option value="">Default injection</option>
+                    </select>
+                </div>
+                <div class="editor-panel-content" style="padding: 0; position: relative;">
+                    <iframe class="preview-frame" id="preview-frame"></iframe>
+                    <div class="preview-loading hidden" id="preview-loading">
+                        <div class="loading-spinner"></div>
+                        <span>Loading preview...</span>
+                    </div>
+                    <div class="preview-error hidden" id="preview-error">
+                        <p>Failed to load preview</p>
+                        <p id="preview-error-msg"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/repo-manager.js"></script>
+    <script src="/js/injection.js"></script>
+    <script src="/js/book-reader.js"></script>
+    <script src="/js/hotkeys.js"></script>
+    <script src="/js/controller.js"></script>
+    <script>
+        // State
+        let currentRepo = window.repoManager.createDefaultRepo();
+        let subdomainCount = 0;
+        
+        // DOM Elements
+        const repoNameInput = document.getElementById('repo-name');
+        const siteUrlInput = document.getElementById('site-url');
+        const defaultCssInput = document.getElementById('default-css');
+        const defaultHtmlInput = document.getElementById('default-html');
+        const defaultJsInput = document.getElementById('default-js');
+        const previewFrame = document.getElementById('preview-frame');
+        const previewLoading = document.getElementById('preview-loading');
+        const previewError = document.getElementById('preview-error');
+        const subdomainList = document.getElementById('subdomain-list');
+        const previewSubdomain = document.getElementById('preview-subdomain');
+        const readerEnabled = document.getElementById('reader-enabled');
+        const readerOptions = document.getElementById('reader-options');
+        
+        // Tab switching
+        document.querySelectorAll('.injection-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('.injection-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.injection-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelector(`.injection-content[data-content="${tabName}"]`).classList.add('active');
+            });
+        });
+        
+        // Reader toggle
+        readerEnabled.addEventListener('change', () => {
+            readerOptions.classList.toggle('hidden', !readerEnabled.checked);
+        });
+        
+        // Add subdomain pattern
+        document.getElementById('add-subdomain-btn').addEventListener('click', () => {
+            addSubdomainItem();
+        });
+        
+        function addSubdomainItem(data = {}) {
+            const id = subdomainCount++;
+            const item = document.createElement('div');
+            item.className = 'subdomain-item';
+            item.dataset.id = id;
+            const readerEnabled = data.bookReader?.enabled || false;
+            item.innerHTML = `
+                <div class="subdomain-item-header">
+                    <input type="text" class="subdomain-pattern-input" placeholder="chapter|ch|chap" value="${data.pattern || ''}">
+                    <button class="subdomain-delete-btn" onclick="removeSubdomain(${id})">×</button>
+                </div>
+                <div class="subdomain-injection-tabs">
+                    <button class="subdomain-injection-tab active" data-tab="css" data-id="${id}">CSS</button>
+                    <button class="subdomain-injection-tab" data-tab="html" data-id="${id}">HTML</button>
+                    <button class="subdomain-injection-tab" data-tab="js" data-id="${id}">JS</button>
+                    <button class="subdomain-injection-tab" data-tab="reader" data-id="${id}">Reader</button>
+                </div>
+                <div class="subdomain-content" data-content="css" data-id="${id}">
+                    <textarea class="subdomain-textarea subdomain-css" placeholder="/* CSS for this pattern */">${data.css || ''}</textarea>
+                </div>
+                <div class="subdomain-content hidden" data-content="html" data-id="${id}">
+                    <textarea class="subdomain-textarea subdomain-html" placeholder="<!-- HTML for this pattern -->">${data.html || ''}</textarea>
+                </div>
+                <div class="subdomain-content hidden" data-content="js" data-id="${id}">
+                    <textarea class="subdomain-textarea subdomain-js" placeholder="// JS for this pattern">${data.js || ''}</textarea>
+                </div>
+                <div class="subdomain-content hidden" data-content="reader" data-id="${id}">
+                    <div class="subdomain-reader-settings">
+                        <div class="setting-item mb-2" style="display: flex; justify-content: space-between; align-items: center;">
+                            <label>Enable Book Reader for this pattern</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="subdomain-reader-enabled" ${readerEnabled ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="subdomain-reader-options ${readerEnabled ? '' : 'hidden'}">
+                            <div class="settings-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div class="setting-item">
+                                    <label>Mode</label>
+                                    <select class="subdomain-reader-mode">
+                                        <option value="two-page" ${data.bookReader?.mode === 'two-page' ? 'selected' : ''}>Two Page</option>
+                                        <option value="single" ${data.bookReader?.mode === 'single' ? 'selected' : ''}>Single Page</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <label>Image Selector</label>
+                                    <input type="text" class="subdomain-image-selector" placeholder="img.page" value="${data.bookReader?.imageSelector || ''}">
+                                </div>
+                                <div class="setting-item">
+                                    <label>Next Page Selector</label>
+                                    <input type="text" class="subdomain-next-selector" placeholder=".next-btn" value="${data.bookReader?.nextPageSelector || ''}">
+                                </div>
+                                <div class="setting-item">
+                                    <label>Prev Page Selector</label>
+                                    <input type="text" class="subdomain-prev-selector" placeholder=".prev-btn" value="${data.bookReader?.prevPageSelector || ''}">
+                                </div>
+                                <div class="setting-item" style="grid-column: span 2;">
+                                    <label>URL Pattern</label>
+                                    <input type="text" class="subdomain-url-pattern" placeholder="/chapter-(\\d+)/" value="${data.bookReader?.urlPattern || ''}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Tab switching for this subdomain
+            item.querySelectorAll('.subdomain-injection-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    const itemId = tab.dataset.id;
+                    item.querySelectorAll('.subdomain-injection-tab').forEach(t => t.classList.remove('active'));
+                    item.querySelectorAll('.subdomain-content').forEach(c => c.classList.add('hidden'));
+                    tab.classList.add('active');
+                    item.querySelector(`.subdomain-content[data-content="${tabName}"]`).classList.remove('hidden');
+                });
+            });
+            
+            // Toggle reader options visibility
+            const readerToggle = item.querySelector('.subdomain-reader-enabled');
+            const readerOptionsDiv = item.querySelector('.subdomain-reader-options');
+            readerToggle.addEventListener('change', () => {
+                readerOptionsDiv.classList.toggle('hidden', !readerToggle.checked);
+            });
+            
+            subdomainList.appendChild(item);
+            updatePreviewSubdomainOptions();
+        }
+        
+        function removeSubdomain(id) {
+            const item = subdomainList.querySelector(`.subdomain-item[data-id="${id}"]`);
+            if (item) {
+                item.remove();
+                updatePreviewSubdomainOptions();
+            }
+        }
+        
+        function updatePreviewSubdomainOptions() {
+            const items = subdomainList.querySelectorAll('.subdomain-item');
+            previewSubdomain.innerHTML = '<option value="">Default injection</option>';
+            
+            items.forEach((item, index) => {
+                const pattern = item.querySelector('.subdomain-pattern-input').value || `Pattern ${index + 1}`;
+                const option = document.createElement('option');
+                option.value = item.dataset.id;
+                option.textContent = pattern;
+                previewSubdomain.appendChild(option);
+            });
+        }
+        
+        // Load preview
+        document.getElementById('load-preview-btn').addEventListener('click', loadPreview);
+        
+        async function loadPreview() {
+            const url = siteUrlInput.value.trim();
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+            
+            previewLoading.classList.remove('hidden');
+            previewError.classList.add('hidden');
+            
+            try {
+                const proxyUrl = `/proxy?url=${encodeURIComponent(url)}`;
+                previewFrame.src = proxyUrl;
+                
+                previewFrame.onload = () => {
+                    previewLoading.classList.add('hidden');
+                    applyPreviewInjections();
+                };
+                
+                previewFrame.onerror = () => {
+                    throw new Error('Failed to load iframe');
+                };
+            } catch (e) {
+                previewLoading.classList.add('hidden');
+                previewError.classList.remove('hidden');
+                document.getElementById('preview-error-msg').textContent = e.message;
+            }
+        }
+        
+        function applyPreviewInjections() {
+            try {
+                const selectedId = previewSubdomain.value;
+                let injection;
+                
+                if (selectedId) {
+                    const item = subdomainList.querySelector(`.subdomain-item[data-id="${selectedId}"]`);
+                    injection = {
+                        css: item.querySelector('.subdomain-css').value,
+                        html: item.querySelector('.subdomain-html').value,
+                        js: item.querySelector('.subdomain-js').value
+                    };
+                } else {
+                    injection = {
+                        css: defaultCssInput.value,
+                        html: defaultHtmlInput.value,
+                        js: defaultJsInput.value
+                    };
+                }
+                
+                window.injectionEngine.applyToIframe(previewFrame, injection);
+            } catch (e) {
+                console.error('Could not apply injections:', e);
+            }
+        }
+        
+        // Re-apply injections when changed
+        previewSubdomain.addEventListener('change', applyPreviewInjections);
+        [defaultCssInput, defaultHtmlInput, defaultJsInput].forEach(input => {
+            input.addEventListener('input', debounce(applyPreviewInjections, 500));
+        });
+        
+        // Collect repo data
+        function collectRepoData() {
+            const subdomains = [];
+            subdomainList.querySelectorAll('.subdomain-item').forEach(item => {
+                const readerEnabled = item.querySelector('.subdomain-reader-enabled')?.checked || false;
+                subdomains.push({
+                    pattern: item.querySelector('.subdomain-pattern-input').value,
+                    regex: true,
+                    css: item.querySelector('.subdomain-css').value,
+                    html: item.querySelector('.subdomain-html').value,
+                    js: item.querySelector('.subdomain-js').value,
+                    bookReader: {
+                        enabled: readerEnabled,
+                        mode: item.querySelector('.subdomain-reader-mode')?.value || 'two-page',
+                        imageSelector: item.querySelector('.subdomain-image-selector')?.value || '',
+                        nextPageSelector: item.querySelector('.subdomain-next-selector')?.value || '',
+                        prevPageSelector: item.querySelector('.subdomain-prev-selector')?.value || '',
+                        urlPattern: item.querySelector('.subdomain-url-pattern')?.value || ''
+                    }
+                });
+            });
+            
+            return {
+                name: repoNameInput.value || 'Unnamed',
+                url: siteUrlInput.value,
+                injections: {
+                    default: {
+                        css: defaultCssInput.value,
+                        html: defaultHtmlInput.value,
+                        js: defaultJsInput.value
+                    },
+                    subdomains
+                },
+                bookReader: {
+                    enabled: readerEnabled.checked,
+                    mode: document.getElementById('reader-mode').value,
+                    imageSelector: document.getElementById('image-selector').value,
+                    nextPageSelector: document.getElementById('next-page-selector').value,
+                    prevPageSelector: document.getElementById('prev-page-selector').value,
+                    urlPattern: document.getElementById('url-pattern').value
+                }
+            };
+        }
+        
+        // Save repo
+        document.getElementById('save-btn').addEventListener('click', () => {
+            const repo = collectRepoData();
+            window.repoManager.exportRepo(repo);
+        });
+        
+        // Import repo
+        document.getElementById('import-btn').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.repo';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    try {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const data = JSON.parse(event.target.result);
+                            loadRepoData(data);
+                        };
+                        reader.readAsText(file);
+                    } catch (err) {
+                        alert('Failed to import: ' + err.message);
+                    }
+                }
+            };
+            input.click();
+        });
+        
+        function loadRepoData(data) {
+            repoNameInput.value = data.name || '';
+            siteUrlInput.value = data.url || '';
+            
+            defaultCssInput.value = data.injections?.default?.css || '';
+            defaultHtmlInput.value = data.injections?.default?.html || '';
+            defaultJsInput.value = data.injections?.default?.js || '';
+            
+            // Clear and reload subdomains
+            subdomainList.innerHTML = '';
+            subdomainCount = 0;
+            (data.injections?.subdomains || []).forEach(sub => {
+                addSubdomainItem(sub);
+            });
+            
+            // Book reader settings
+            readerEnabled.checked = data.bookReader?.enabled || false;
+            readerOptions.classList.toggle('hidden', !readerEnabled.checked);
+            document.getElementById('reader-mode').value = data.bookReader?.mode || 'two-page';
+            document.getElementById('image-selector').value = data.bookReader?.imageSelector || '';
+            document.getElementById('next-page-selector').value = data.bookReader?.nextPageSelector || '';
+            document.getElementById('prev-page-selector').value = data.bookReader?.prevPageSelector || '';
+            document.getElementById('url-pattern').value = data.bookReader?.urlPattern || '';
+            
+            if (data.url) {
+                loadPreview();
+            }
+        }
+        
+        // Utility
+        function debounce(fn, delay) {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn(...args), delay);
+            };
+        }
+        
+        // Check URL params for editing existing repo
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('edit');
+        if (editId) {
+            const repo = window.repoManager.getRepoById(editId);
+            if (repo) {
+                loadRepoData(repo);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/api/proxy", "dest": "/api/proxy.js" },
+    { "src": "/api/github-proxy", "dest": "/api/github-proxy.js" },
+    { "src": "/proxy", "dest": "/api/proxy.js" },
+    { "src": "/github-proxy", "dest": "/api/github-proxy.js" },
+    { "src": "/sites", "dest": "/public/sites.html" },
+    { "src": "/api", "dest": "/public/api.html" },
+    { "src": "/settings", "dest": "/public/settings.html" },
+    { "src": "/reader", "dest": "/public/reader.html" },
+    { "src": "/data", "dest": "/public/data.html" },
+    { "src": "/(.*)", "dest": "/public/$1" }
+  ]
+}
